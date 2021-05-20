@@ -1,0 +1,15 @@
+{
+    "Header": {
+        "Dashboard": "Dashboard",
+        "Users": "Users",
+        "Settings": "Settings"
+    },
+    "Content": {
+        "Dashboard": {
+            "Sales": "Sales",
+            "Profit and Loss": "Profit and Loss",
+            "Income and expenses only": "Income and expenses only",
+            "Expense Breakdown":"Expense Breakdown"
+        }
+    } 
+}

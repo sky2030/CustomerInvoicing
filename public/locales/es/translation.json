@@ -1,0 +1,15 @@
+{
+    "Header": {
+        "Dashboard": "Tablero",
+        "Users": "Usuarios",
+        "Settings": "Ajustes"
+    },
+    "Content": {
+        "Dashboard": {
+            "Sales": "Ventas",
+            "Profit and Loss": "Ganancia y perdida",
+            "Income and expenses only": "Solo ingresos y gastos",
+            "Expense Breakdown":"Desglose de gastos"
+        }
+    } 
+}
