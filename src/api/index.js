@@ -14,6 +14,7 @@ export default {
       let token = JSON.parse(localStorage.getItem('userInfo'))
       headers = {
         ...headers,
+        'Access-Control-Allow-Origin': '*',
        'Authorization': 'Bearer '+ token.value
       }
     }

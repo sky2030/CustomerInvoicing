@@ -3,6 +3,8 @@ import { Redirect, Route } from 'react-router';
 import {isUserAuthenticated} from './helpers/authUtils'
 import ImportCustomer from './views/pages/customer/ImportCustomer';
 import ViewCustomer from './views/pages/customer/ViewCustomer';
+import AddProduct from './views/pages/sales/products/AddProduct';
+import ImportVendor from './views/pages/vendors/ImportVendor';
 
 const Dashboard = React.lazy(() => import('./views/pages/dashboard/Dashboard.js'));
 const Customer = React.lazy(() => import('./views/pages/customer/Customer.js') )
@@ -39,11 +41,13 @@ const routes = [
     { path: '/sales/customers', exact: true , name: 'Customer', component: Customer, route: PrivateRoute},
     { path: '/sales/customers/add', name: 'AddCustomer', component: AddCustomer, route: PrivateRoute },
     { path: '/sales/customers/view', name: 'ViewCustomer', component: ViewCustomer, route: PrivateRoute },
-    { path: '/sales/customers/import', name: 'ViewCustomer', component: ImportCustomer, route: PrivateRoute },
+    { path: '/sales/customers/import', name: 'ImportCustomer', component: ImportCustomer, route: PrivateRoute },
     { path: '/vendors', exact: true , name: 'Vendors', component: Vendors, route:PrivateRoute},
     { path: '/vendor/add', name: 'AddVendor', component: AddVendor, route: PrivateRoute },
+    { path: '/vendors/import', name: 'ImportVendors', component: ImportVendor, route: PrivateRoute },
     {path: '/sales/invoice/:id', exact:true, name:'Sales', component:Sales, route:PrivateRoute},
     {path: '/sales/estimates/', exact: true, name: 'Estimates', component: Estimates, route: PrivateRoute},
-    {path: '/sales/products/', exact: true, name:'Products', component: Products, route: PrivateRoute }
+    {path: '/sales/products/', exact: true, name:'Products', component: Products, route: PrivateRoute },
+    {path: '/sales/products/add', exact: true, name:'Products', component: AddProduct, route: PrivateRoute }
 ]
 export default routes

@@ -1,4 +1,4 @@
-import { CModal, CModalHeader, CModalBody,CModalFooter, CCard, CCardBody, CCardHeader, CCardText, CCol, CContainer, CInput, CInputGroup, CInputGroupPrepend, CLabel, CRow, CSelect,CButton } from '@coreui/react';
+import { CModal, CModalHeader, CModalBody,CModalFooter, CCard, CCardBody, CCardHeader, CCardText, CFormText, CCol, CContainer, CInput, CInputGroup,CTextarea, CInputGroupPrepend, CLabel, CRow, CSelect,CButton } from '@coreui/react';
 import React from 'react'
 import InvoiceLogoSelector from '../../../components/InvoiceLogoSelector';
 import Colors from '../../../config/Colors';
@@ -6,30 +6,29 @@ import styles from '../styles';
 import addCustomer from '../../../assets/NewInvoice/addCustomer.png'
 import customersApi from '../../../api/customer';
 import taxApi from '../../../api/tax';
-import '../../../App.css';
+import DarkThemeButton from '../../../components/Buttons';
+
+//Product API
+import productApi from '../../../api/product'
 
 import { ChevronsDown,Trash2,PlusSquare} from 'react-feather';
 
 import {Input, Label} from 'reactstrap';
 // import { theme } from 'highcharts';
 
-let Itemdetail = { 
-                    name:'', 
-                    description:'',
-                    quantity:1, 
-                    price:0,
-                    totalitem:0,  
-                    taxrate:[],
-                    showdrop:false,
-                    AddedTaxes:[
-                      {
-                        rate:0,
-                        taxamount:0,
-                        abb:''
-                      }
-                    ]
-};
+//Style CSS
+import '../../../App.css'
 
+let Itemdetail = { 
+                  name:'', 
+                  description:'',
+                  quantity:1, 
+                  price:0,  
+                  taxrate:[],
+                  showdrop:false,
+                  productdrop:false,
+                  
+};
 class NewInvoice extends React.Component{
   constructor(props){
     super(props)
@@ -44,10 +43,15 @@ class NewInvoice extends React.Component{
       showCustomerList: false,
       selectedCustomer: null,
       taxes:[],
+      productsTableData: [],
       showselectedTax:false,
       selectedTaxRate:[],
-      showTaxList:false,
+      subTotal:[],
+      showProducts:false,
+      ShowTaxdrop:false,
       showmodal:false,
+      productmodal:false,
+      showInsidemodal:false,
       taxName:'',
       taxAbb:'',
       taxRate:undefined,
@@ -59,7 +63,14 @@ class NewInvoice extends React.Component{
       showtaxNumberOnInvoice:true,
       taxNameError:'',
       taxAbbError:'',
-      taxRateError:''
+      taxRateError:'',
+      productName:'',
+      productPrice:'',
+      productDescription:'',
+      sellChecked:false,
+      buyChecked:false,
+      productSelectedTaxes:[],
+      productNameError:''
 
     }
    // this.addItem = this.addItem.bind(this)
@@ -80,6 +91,17 @@ class NewInvoice extends React.Component{
       console.log("Error:", err)
     })
     this.getTaxes();
+    this.getProduct();
+  }
+
+  getProduct = () =>{
+    let userInfo = JSON.parse(localStorage.getItem('userInfo'))
+        productApi.get(userInfo.organizationId).then((res) => {
+           // console.log("Products...", res.data)
+            this.setState({productsTableData: res.data})
+        }).catch((error) => {
+            console.log("Error", error)
+        })
   }
 
   getTaxes = () => {
@@ -93,6 +115,32 @@ class NewInvoice extends React.Component{
       console.log("Error:", err)
     })
   }
+
+  handleSelectedTax = (tax) => {
+          console.log("Tax", tax)
+          let selectedTaxes = this.state.productSelectedTaxes
+          selectedTaxes.push(tax)
+          this.setState({productSelectedTaxes:selectedTaxes})
+          this.setState({ShowTaxdrop:false})
+  }
+
+  ProductValidation = () => {
+    let productNameError = "";
+
+    const{productName}=this.state;
+    
+    if (!productName) {
+      productNameError = "*Name is required";
+    }
+    
+    if ( productNameError) {
+
+      this.setState({productNameError:productNameError })  
+      return false
+
+    }
+    return true;
+  };
 
  validate = () => {
     let taxNameError = "";
@@ -160,17 +208,52 @@ class NewInvoice extends React.Component{
                if(isValid){
                 taxApi.post(payload,headers).then((response) => {
                   console.log(JSON.stringify(response))
-                  this.setState({showmodal:false})
+                  this.setState({showmodal:false,showInsidemodal:false})
               }).catch((error) => {
                // console(JSON.stringify(error))
                   console.log("Error:", error.response.data[0])
                   alert("Failed: "+ JSON.stringify(error.response.data[0]))
-                  this.setState({showmodal:false})
+                  this.setState({showmodal:false,showInsidemodal:false})
               })
                } 
                  
 
   }
+
+  handleProductSubmit = async () => {
+    const isValid = this.ProductValidation()
+    if(isValid){
+        let headers ={
+          'Content-Type': 'application/json'
+        }
+        let userInfo = JSON.parse(localStorage.getItem('userInfo'))
+        let data = {
+          productName: this.state.productName,
+          productDescription: this.state.productDescription,
+          productPrice: this.state.productPrice,
+          productSellThis: this.state.sellChecked,
+          productBuyThis: this.state.buyChecked,
+          organization: {
+            organizationId: userInfo.organizationId,
+            name: userInfo.organizationName,
+            active: true
+          },
+          salesTax: this.state.productSelectedTaxes,
+          active: true,
+          deleted: false
+        }
+        console.log("Data......", JSON.stringify(data))
+     await   productApi.post(JSON.stringify(data), headers).then((res) => {
+          console.log("Response", res)
+          this.props.history.push('/sales/products')
+          this.setState({productmodal:false})
+        }).catch((err) => {
+          this.setState({productmodal:false})
+          console.log("Error", err)
+        })
+      }
+    this.getProduct();
+  } 
 
   componentWillUnmount(){
     document.removeEventListener('mousedown', this.handleClickOutside);
@@ -195,6 +278,64 @@ class NewInvoice extends React.Component{
     console.log(">?>?>?>?>?", this.state.invoiceItem)
   }
 
+  AddExistingProducts =  (item) =>{
+    const {invoiceItem,showProducts,subTotal} = this.state;
+
+   // console.log(item.productName)
+    let Tempobj = {
+                name:item.productName, 
+                description:item.productDescription,
+                quantity:1, 
+                price:item.productPrice, 
+                taxrate:item.salesTax,
+                showdrop:false,
+                productdrop:false,
+                productID:item.id
+    }
+    this.setState(prevState => ({ invoiceItem: [...prevState.invoiceItem, Tempobj]}))
+    console.log("Length of Invoice items ....... " + invoiceItem.length)
+    this.setState({showProducts:!showProducts})
+
+    let total = 1 * item.productPrice;
+
+    subTotal.push(total);
+    //  if(invoiceItem.length === 1){
+    //    this.setState({ invoiceItem: [Tempobj]},() => {
+    //      console.log("Update Tax Rate is going to be called ............", invoiceItem)
+    //       this.UpdateTaxRateInItems();
+    //  })
+     
+       
+    //  }
+    //  else{
+    //   this.setState(prevState => ({ invoiceItem: [...prevState.invoiceItem, Tempobj]}))
+    //  }
+   
+  }
+
+ 
+
+  UpdateTaxRateInItems = (e, index) => {
+    const {invoiceItem} = this.state;
+         let tempArray = invoiceItem
+         let TaxesRates = tempArray[index].taxrate
+         let updatedArray = tempArray.map((item, indexValue) => {
+             if (indexValue === index) {
+                 return { ...item, taxrate: 
+                TaxesRates.map(rate => {
+                    console.log("Tax Rate inside Method ........... " , rate)
+                })
+                
+                }
+             }
+             else {
+                 return {
+                     ...item
+                 }
+             }
+         })
+         this.setState({invoiceItem:updatedArray})
+     }
  
  UpdateInvoiceItemName = (e, index) => {
    const {invoiceItem} = this.state;
@@ -243,7 +384,6 @@ class NewInvoice extends React.Component{
        })
        this.setState({invoiceItem:updatedArray})
    }
-
    ShowDropdown = (index) => {
     const {invoiceItem} = this.state;
          let tempArray = invoiceItem
@@ -260,6 +400,37 @@ class NewInvoice extends React.Component{
          this.setState({invoiceItem:updatedArray})
      }
 
+     ShowProductDropdown = (index) => {
+      const {invoiceItem} = this.state;
+           let tempArray = invoiceItem
+           let updatedArray = tempArray.map((item, indexValue) => {
+               if (indexValue === index) {
+                   return { ...item, productdrop: true }
+               }
+               else {
+                   return {
+                       ...item
+                   }
+               }
+           })
+           this.setState({invoiceItem:updatedArray})
+       }
+
+       HideProductDropdown = (index) => {
+        const {invoiceItem} = this.state;
+             let tempArray = invoiceItem
+             let updatedArray = tempArray.map((item, indexValue) => {
+                 if (indexValue === index) {
+                     return { ...item, productdrop: false }
+                 }
+                 else {
+                     return {
+                         ...item
+                     }
+                 }
+             })
+             this.setState({invoiceItem:updatedArray})
+         } 
      HideDropdown = (index) => {
       const {invoiceItem} = this.state;
            let tempArray = invoiceItem
@@ -274,7 +445,7 @@ class NewInvoice extends React.Component{
                }
            })
            this.setState({invoiceItem:updatedArray})
-       }  
+       } 
    
  UpdateInvoiceItemPrice = (e, index) => {
   const {invoiceItem} = this.state;
@@ -309,29 +480,34 @@ class NewInvoice extends React.Component{
 
   } 
   
-  handleTaxSelection= async(item,Amount,index) => {
+  handleTaxSelection= (item,Amount,index) => {
     const{selectedTaxRate}= this.state;
     console.log('Tax Selected')
-   await this.HideDropdown(index)
+    if(Amount === 0) {
+      alert("Before Selecting Tax, Enter the item price")
+      return
+    }
+   this.HideDropdown(index)
     selectedTaxRate.push({
       prodIndex:index,
       rate:item.rate,
       abb:item.abbreviation,
       taxAmount:Amount
     })
-       
-      // console.log(selectedTaxRate)  
-      this.HandleTaxes(item,Amount,index)
+        // console.log(selectedTaxRate)  
+    //  this.HandleTaxes(item,Amount,index)
   }
 
   HandleTaxes = (item, Amount,index) => {
     const {invoiceItem} = this.state;
     console.log("Handled Taxes.... " + item.rate + " Amount ...." + Amount + " Index ... " + index)
-    //let Newtaxitem = invoiceItem.taxrate.push({rate:item.rate, amount:Amount})
          let tempArray = invoiceItem
+      //   let tempTaxRate = tempArray.taxrate
          let updatedArray = tempArray.map((items, indexValue) => {
+        //   console.log("&&&&&&&&&Invoice Taxes......: " + JSON.stringify(invoiceItem.taxrate))
+         let addedTaxArray = invoiceItem.taxrate.push(item)
              if (indexValue === index) {
-                 return { ...items, taxrate: {rate:item.rate, amount:Amount} }
+                 return { ...items, taxrate: addedTaxArray }
              }
              else {
                  return {
@@ -372,6 +548,27 @@ toggle = () => {
     })
   }
 
+  Insidetoggle = () =>{
+    const{showInsidemodal}=this.state
+    this.setState({showInsidemodal:!showInsidemodal})
+    this.setState({
+      taxNameError:'',
+      taxRateError:'',
+      taxAbbError:''
+    })
+  }
+  
+  
+toggleProductModal = () => {
+  const{productmodal}=this.state
+    this.setState({productmodal:!productmodal})
+    this.setState({
+      taxNameError:'',
+      taxRateError:'',
+      taxAbbError:''
+    })
+  }
+
 
   UnselectItem = (index) =>{
     const {selectedTaxRate} = this.state;    
@@ -384,11 +581,22 @@ toggle = () => {
 
   }
 
+  deleteTax = (index) => {
+    let selectedTaxes = this.state.productSelectedTaxes
+    selectedTaxes.splice(index)
+    this.setState({productSelectedTaxes:selectedTaxes})
+  }
+
   render(){
-const{taxes,
+const{
+  taxes,
+  productsTableData,
   selectedTaxRate,
-  showTaxList,
   showmodal,
+  productmodal,
+  showInsidemodal,
+  showProducts,
+  ShowTaxdrop,
   taxName,
   taxRate,
   taxAbb,
@@ -401,39 +609,17 @@ const{taxes,
   ItemVisible,
   taxAbbError ,
   taxNameError ,
-  taxRateError
+  taxRateError,
+  productName,
+  productPrice,
+  productDescription,
+  sellChecked,
+  buyChecked,
+  productSelectedTaxes,
+  subTotal
 }= this.state;
-
+console.log("$$$$$$$$$$$$Sub Total Array []: " + JSON.stringify(subTotal));
  const {Selectedtaxes}=this.state.invoiceItem;
- console.log("Invoice Taxes Rate : ************** " + JSON.stringify(invoiceItem) );
-  
-    const SelectedTaxList = selectedTaxRate.length ? (
-      selectedTaxRate.map((item,index) => {
-        return (
-          <div key={item.index} style={{marginTop:'15px', marginBottom:'20px'}}>
-           <b>Tax: </b> <span style={{ border:`1px solid ${Colors.themeDark}`,width:'150px',height:'25px', padding:'5px', borderRadius:'3px'}}> 
-           {item.abbreviation}
-           </span>
-           <Trash2 size={18} color={Colors.themeDark} onClick={ () => this.UnselectItem(index)} style={{marginLeft:'10px'}}/>
-          </div>
-        );
-      })
-    ) : null;
-
-    const SelectedTaxArray = Selectedtaxes ? (      
-      Selectedtaxes.map((item,index) => {
-        //console.log("Taxes Rate : ************** " + JSON.stringify(taxrate) );
-        return (
-          <div key={item.index} style={{marginTop:'15px', marginBottom:'20px'}}>
-           <b>Tax: </b> <span style={{ border:`1px solid ${Colors.themeDark}`,width:'150px',height:'25px', padding:'5px', borderRadius:'3px'}}> 
-           {item.rate} %
-           </span>
-           {/* <Trash2 size={18} color={Colors.themeDark} onClick={ () => this.UnselectItem(index)} style={{marginLeft:'10px'}}/> */}
-          </div>
-        );
-      })
-    ) : null;
-
     return(
       <CContainer>
         <h4 className='mt-4 text-center font-weight-bold'>New Invoice</h4>
@@ -554,16 +740,57 @@ const{taxes,
               <CCardBody>
                 {
                   this.state.invoiceItem.map((item,index) => {
-                    let total = item.price * item.quantity;
+                    var total = item.price * item.quantity;
                     const itemIndex = index;
                     let ShowDrop = item.showdrop;
+                    let ProductDrop = item.productdrop;
+                    let taxArray = item.taxrate;
+                    
                     return   (                                            
-                      <div>
-                        <CRow className='m-3'>  
+                      <div className="itemRow">
+                        <CRow className='m-3 '>  
+                        {/* <CCol sm="2">
+                        {!ProductDrop ? 
+                                            <div style={{ border:'1px solid grey', borderRadius:'5px', width:'150px',height:'35px', cursor:'pointer',display:'flex',
+                                          justifyContent:'center', alignItems:'center'}}
+                                            onClick={() => this.ShowProductDropdown(index)}> 
+                                            <span style={{color:'lightgrey'}}>Choose Items</span>
+                                                        <ChevronsDown size={18} color={Colors.themeDark}/>
+                                            </div> 
+                                            
+                                          : null }                                   
+  
+  
+                                          {ProductDrop ? 
+                                          <div   className="vertical-center" style={{ width:'150px', padding:10}}>
+                                          <div style={{display: 'flex', flexDirection:'column',justifyContent: 'center', margin:5}}>                                            
+                                            <CInput onFocus={() =>  this.HideProductDropdown(index)} ></CInput>
+                                            <div style={{border: `1px solid ${Colors.inputBorder}`}}>
+                                                                  {
+                                                                   productsTableData.map((item) => {
+                                                                    return (
+                                                                      <div className="NewTaxes" key={item.taxNumber} onClick={ () => this.AddExistingProducts(item,index)}>
+                                                                        {item.productName}
+                                                                      </div>
+                                                                    );
+                                                                  })
+                                                                  }
+                                              <div onClick={this.toggleProductModal} className="CreateTax"> + New Product</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                          
+                                          : null}
+
+                                                        
+
+
+                        </CCol> */}
                           <CCol sm='3'>
-                            <CInput placeholder="Enter item name" style={styles.inputBorderRadius} value={item.name}
+                         <b>{item.name}</b>
+                            {/* <CInput placeholder="Enter item name" style={styles.inputBorderRadius} value={item.name}
                             onChange={(e) => this.UpdateInvoiceItemName(e, index)}
-                            ></CInput>
+                            ></CInput> */}
                           </CCol>
                           <CCol sm='4'>
                             <CInput placeholder="Enter item description" style={styles.inputBorderRadius} value={item.description}
@@ -582,7 +809,7 @@ const{taxes,
                             {/* <CInput placeholder="Enter item name" style={styles.inputBorderRadius}></CInput> */}
                           </CCol>
                           <CCol sm='1'>
-                          <Trash2 size={24} color={Colors.themeDark} onClick={ () => this.DeleteInvoiceItem(index)} style={{marginLeft:'10px',marginRight:'5px',cursor:'pointer'}}/>
+                          <Trash2 size={24} className="trash" onClick={ () => this.DeleteInvoiceItem(index)} style={{marginLeft:'10px',marginRight:'5px',cursor:'pointer'}}/>
                           <PlusSquare size={24} color={Colors.themeGreen} onClick={() => this.addMore()} />
                           </CCol>
                         </CRow>
@@ -594,18 +821,38 @@ const{taxes,
                             <CInputGroup className="mt-3" >
                               <CInputGroupPrepend className="col-md-4">
   
-                                {selectedTaxRate.length >= 1 ? null : <CLabel className="mfs-auto align-self-center h6" >Tax: </CLabel> }
+                                {/* {selectedTaxRate.length >= 1 ? null : <CLabel className="mfs-auto align-self-center h6" >Tax: </CLabel> } */}
                                 
                                     {/* <p>*</p> */}
                               </CInputGroupPrepend>
                                     <div style={{display:'flex', flexDirection:'column'}}>
+
+                                            <div>
+                                                {taxArray.map(tax => {
+                                                  let Amount = tax.rate*total / 100;
+                                                  return(
+                                                    <div key={tax.taxId} className="TaxSec">
+                                                      <b>Tax: </b>
+                                                      <div className="flexbox"> 
+                                                       {tax.abbreviation}                                                    
+                                                      </div>
+                                                      <div className="taxdynamicTotal">{Amount}</div>  
+                                                      
+
+                                                    </div>
+                                                  )
+                                                })
+
+                                                }                                              
+                                            </div>
+
                                           <div >
 
                                             {
                                                selectedTaxRate.map((item,index) => {
-
+                                                let Amount = item.rate*total / 100;
                                                  let ShowTax=false;
-                                                 
+
                                                  if(item.prodIndex === itemIndex){
                                                    ShowTax=true;
                                                  }
@@ -614,7 +861,7 @@ const{taxes,
                                                  }
 
                                                 return (
-                                                  <div key={item.prodIndex}  className="TaxSec" >
+                                                  <div key={item.prodIndex} className="TaxSec">
                                                     
                                                         {ShowTax ? 
                                                         <>
@@ -622,9 +869,9 @@ const{taxes,
                                                       <div className="flexbox"> 
                                                       {item.abb}                                                     
                                                       </div>
-                                                      <Trash2 size={18} color={Colors.themeDark} onClick={ () => this.UnselectItem(index)} style={{marginLeft:'10px'}}/>
+                                                      <Trash2 className="trash" size={18} onClick={ () => this.UnselectItem(index)} style={{marginLeft:'10px',}}/>
                                                        
-                                                      <div className="taxTotal">{item.taxAmount}</div>   
+                                                      <div className="taxTotal">{Amount}</div>   
 
                                                       </>
                                                         :null 
@@ -640,7 +887,8 @@ const{taxes,
                                               {/* {SelectedTaxArray} */}
  
                                           </div>
-                                          {!ShowDrop ?
+                                          
+                                          {!ShowDrop ? 
                                             <div style={{ border:'1px solid grey', borderRadius:'5px', width:'150px',height:'35px', cursor:'pointer',display:'flex',
                                           justifyContent:'center', alignItems:'center'}}
                                             onClick={() => this.ShowDropdown(index)}> 
@@ -650,9 +898,9 @@ const{taxes,
                                             
                                           : null }
                                         
-                                        
-                                        
-                                         {ShowDrop ? 
+  
+  
+                                          {ShowDrop ? 
                                           <div   className="vertical-center" style={{ width:'150px', padding:10}}>
                                           <div style={{display: 'flex', flexDirection:'column',justifyContent: 'center', margin:5}}>
                                             
@@ -664,27 +912,32 @@ const{taxes,
                                                                     let Amount = item.rate * total / 100;
                                                                    // console.log("Amount after Taxes... " + Amount)
                                                                     return (
-                                                                      <div key={item.taxNumber} onClick={ () => this.handleTaxSelection(item,Amount,index)} style={{padding:5, cursor: 'pointer'}} >
+                                                                      <div className="NewTaxes" key={item.taxNumber} onClick={ () => this.handleTaxSelection(item,Amount,index)}>
                                                                         {item.abbreviation}
                                                                       </div>
                                                                     );
                                                                   })
                                                                   }
-                                              <div onClick={this.toggle} style={{padding:5, borderTop:`1px solid ${Colors.themeDark}`, color: Colors.themeGreen,cursor:'pointer' }}>Create a new Tax</div>
+                                              <div onClick={this.toggle} className="CreateTax">Create a new Tax</div>
                                             </div>
                                           </div>
                                         </div>
                                           
                                           : null}
-                                      
-                                       
-
-                                         
                             
                                   
                                     </div>
                                              
-                                    <CModal show={showmodal} onClose={this.toggle} size='lg'>
+                                    
+                              
+                             </CInputGroup>
+                          </CCol>
+                        </CRow>
+                      </div>
+                    )
+                  } )
+                }
+                <CModal show={showmodal} onClose={this.toggle} size='lg'>
                                               <CModalHeader closeButton style={{backgroundColor:"lightgrey"}}> <h2>Create a new Tax</h2></CModalHeader>
   
                                               <CModalBody>
@@ -734,20 +987,178 @@ const{taxes,
                                                 >Cancel</CButton>
                                               </CModalFooter>
                                      </CModal>
+                {showProducts
+                ? <> 
+                <div className="ProductListContainer"> 
+                      <CRow>
+                        <CCol sm='12' style={{ cursor:'pointer'}}
+                        className="text-center">
+                          {   productsTableData.map((item) => {
+                                          return (
+                                    <div className="Productlistitem" key={item} onClick={ () => this.AddExistingProducts(item)}>
+                                          {item.productName} 
+                                          <hr/>   
+                                                </div>
+                                                    );
+                                                  })
+                              }
+                        
+                        </CCol>                  
+                      </CRow> 
+                      <CRow className='CreateNewItembtn '>
+                      <CCol sm='10' className="text-center ">
+                        <div onClick={() => this.toggleProductModal()}>
+                          Create New Product
+                        </div>
+                      </CCol>
+                    </CRow>
+                    </div>
+                    <CModal show={productmodal} onClose={this.toggleProductModal} size='lg'>
+                                              <CModalHeader closeButton style={{backgroundColor:"lightgrey"}}> <h2>Create New Product</h2></CModalHeader>
+  
+                                              <CModalBody>
+  
+                                                <CLabel>Product Name</CLabel>
+                                                <CLabel className="ml-1 align-self-center" style={{color: Colors.red}}>*</CLabel>
+                                                <CInput style={styles.inputBorderRadius} value={productName} onChange={(e) => this.setState({productName: e.target.value})}/>                                          
+                                                <CFormText className="help-block col-4" style={{margin:'auto'}} color="danger">{this.state.productNameError}</CFormText>
+                                                <CInputGroup className="mt-3">
+                                                      <CInputGroupPrepend className="col-md-4">
+                                                          <CLabel className="mfs-auto align-self-center">Description</CLabel>
+                                                      </CInputGroupPrepend>
+                                                      <CTextarea style={styles.inputBorderRadius} value={productDescription} onChange={(e) => this.setState({productDescription: e.target.value})}></CTextarea>
+                                                 </CInputGroup>
+                                                <CLabel>Price </CLabel>
+                                                <CInput  onChange={(e) => this.setState({productPrice:e.target.value})} value={productPrice}/>                                              
+                                        <div style={{marginTop:'20px'}}>
+  
+                                              
+                                                <Label style={{marginLeft:"1rem",fontSize:'14px'}}> 
+                                                <Input type="checkbox"checked={sellChecked} 
+                                                onChange={(target) => this.setState({sellChecked:target.checked})} 
+                                                /> Sell This  </Label>
+                                                <Label style={{marginLeft:"2rem",fontSize:'14px'}}> 
+                                                <Input type="checkbox" checked={buyChecked}
+                                                onChange={(target) => this.setState({buyChecked:target.checked})} 
+                                                /> Buy This  </Label>
+                                                
+                                                
+                                           </div>
+
+                        <CInputGroup className="mt-3">
+                        <CInputGroupPrepend className="col-md-4">
+                            <CLabel className="mfs-auto align-self-center">Sales Tax</CLabel>
+                        </CInputGroupPrepend>
+                          <div>
+                            {
+                              productSelectedTaxes.length !== 0 ?
+                              productSelectedTaxes.map((item, index) => (
+                                <div style={{display: 'flex', flexDirection:'column',justifyContent: 'center'}} key={item.taxId}>
+                                  <div className='ml-2' style={{display: 'flex', flexDirection:'row'}}>
+                                    <CCardText style={{fontSize: 16}}>{item.abbreviation}</CCardText>
+                                    <Trash2 size={18} className="ml-2" onClick={() => this.deleteTax(index)}></Trash2>
+                                  </div>
+                                </div>
+                              ))
+                              :
+                              <div></div>
+                            }
+                            <div className="vertical-center">
+                              <div style={{display: 'flex', flexDirection:'column',justifyContent: 'center'}}>
                               
-                             </CInputGroup>
-                          </CCol>
-                        </CRow>
-                      </div>
-                    )
-                  } )
-                }
+                              {!ShowTaxdrop ? 
+                                           <CInput onFocus={() => this.setState({ShowTaxdrop: true}) } style={styles.inputBorderRadius}></CInput>
+                                            
+                                          : null }
+                            {ShowTaxdrop
+                             ? 
+                              <div style={{border: `1px solid ${Colors.inputBorder}`}}>
+                                <CInput onFocus={() => this.setState({ShowTaxdrop: false}) } style={styles.inputBorderRadius}></CInput>
+                                {
+                                    this.state.taxes.map((tax) => (
+                                      <div onClick={() => this.handleSelectedTax(tax)} style={{padding:5, cursor: 'pointer'}} key={tax.taxId}>{tax.abbreviation}</div>
+                                    ))
+                                }
+                                <div onClick={this.Insidetoggle} style={{padding:5, borderTop:`1px solid ${Colors.themeDark}`, color: Colors.themeGreen, cursor:'pointer' }}>Create a new Tax</div>
+                              </div>
+                            :
+                            <div></div>
+                              }
+                            </div>                            
+                            </div>
+                          </div>
+                        
+                          <CModal show={showInsidemodal} onClose={this.Insidetoggle} size='lg'>
+                                              <CModalHeader closeButton style={{backgroundColor:"lightgrey"}}> <h2>Create a new Tax</h2></CModalHeader>
+  
+                                              <CModalBody>
+  
+                                                <CLabel>Tax Name</CLabel>
+                                                <CInput  placeholder="for example GST..." onChange={(e) => this.setState({taxName:e.target.value})} value={taxName}/>                                              
+                                                <div style={{ fontSize: 10, color: "red" }}>
+                                                          {taxNameError}
+                                                      </div>
+                                                <CLabel>Rate</CLabel>
+                                                <CInput onChange={(e) => this.setState({taxRate:e.target.value})} value={taxRate}/>
+                                                <div style={{ fontSize: 10, color: "red" }}>
+                                                          {taxRateError}
+                                                      </div>
+                                                <CLabel>Tax Number </CLabel>
+                                                <CInput  onChange={(e) => this.setState({taxNo:e.target.value})}  value={taxNo}/>                                              
+                                                <CLabel>Abbreviation</CLabel>
+                                                <CInput  onChange={(e) => this.setState({taxAbb:e.target.value})} value={taxAbb}/>
+                                                <div style={{ fontSize: 10, color: "red" }}>
+                                                          {taxAbbError}
+                                                      </div>
+                                                <CLabel>Description</CLabel>
+                                                <CInput  onChange={(e) => this.setState({taxDesc:e.target.value})} value={taxDesc}/>
+                                              
+                                              <div style={{marginTop:'20px'}}>
+  
+                                              
+                                                <Label style={{marginLeft:"1rem",fontSize:'14px'}}> <Input type="checkbox"checked={taxRecoverable} 
+                                                onChange={(target) => this.setState({taxRecoverable:target.checked})} 
+                                                /> Tax Recoverable  </Label>
+                                                <Label style={{marginLeft:"2rem",fontSize:'14px'}}> <Input type="checkbox" checked={compoundTax}
+                                                onChange={(target) => this.setState({compoundTax:target.checked})} 
+                                                /> compound Tax  </Label>
+                                                <Label style={{marginLeft:"2rem",fontSize:'14px'}}> <Input type="checkbox" checked={showtaxNumberOnInvoice}
+                                                onChange={(target) => this.setState({showtaxNumberOnInvoice:target.checked})}  
+                                                /> Show tax Number on Invoice  </Label>
+                                                
+                                                </div>
+                                        
+                                               
+                                              </CModalBody>
+                                              <CModalFooter>
+                                                <CButton color="primary" onClick={this.AddTax}>Save</CButton>{' '}
+                                                <CButton
+                                                  color="secondary"
+                                                  onClick={this.Insidetoggle}
+                                                >Cancel</CButton>
+                                              </CModalFooter>
+                                     </CModal>
+
+                    </CInputGroup>
+                                              
+                                              </CModalBody>
+                                              <CModalFooter>
+                                                <CButton color="primary" onClick={this.handleProductSubmit}>Save</CButton>{' '}
+                                                <CButton
+                                                  color="secondary"
+                                                  onClick={this.toggleProductModal}
+                                                >Cancel</CButton>
+                                              </CModalFooter>
+                                     </CModal>  
+              </>
+                
+                :null}
                 <CRow className='mt-3'>
                   <CCol sm='12' style={{borderStyle:'solid', borderWidth:'1px',padding:10, backgroundColor: this.state.addItemBgColor, cursor:'pointer'}}
                   onMouseEnter={() => this.setState({addItemBgColor: Colors.grey})} 
                   onMouseLeave={() => this.setState({addItemBgColor: Colors.white})}  
                   className="text-center">
-                    <div onClick={() => this.addMore()}>
+                    <div onClick={() => this.setState({showProducts:!showProducts})}>
                       <CCardText style={{color:Colors.themeGreen}}>Add an item</CCardText> 
                     </div>
                   </CCol>

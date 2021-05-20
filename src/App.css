@@ -7,38 +7,105 @@
   pointer-events: none;
 }
 
-.TaxSec{
+.itemRow {
+  background-color: rgb(217, 241, 243);
+  padding: 5px;
+  border-bottom: 2px dashed rgb(94, 177, 156);
+}
+.TaxSec {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
   width: 15vw;
-  
 }
 
-.taxTotal{
-  width:70px;
+.taxTotal {
+  width: 70px;
   text-align: right;
-  transition: 2s ease-in; 
+  transition: 2s ease-in;
 }
 
-.flexbox{
+.taxdynamicTotal {
+  width: 97px;
+  text-align: right;
+  transition: 1s ease-in;
+}
+
+.flexbox {
   width: 5vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  border:1px solid rgb(194, 190, 190);
+  border: 1px solid rgb(194, 190, 190);
   margin-left: 5px;
-  padding:5px;
-  border-radius:3px;
+  padding: 5px;
+  border-radius: 3px;
   font-size: 12px;
 }
 
-.taxAmount{
+.taxAmount {
   width: 250px;
   padding-left: 150px;
-  background-color: red;
 }
 
+.trash {
+  color: black;
+}
+
+.trash:hover {
+  color: red;
+}
+
+.CreateTax {
+  padding: 5px;
+  border-top: 1px solid black;
+  color: #04d5b2;
+  cursor: pointer;
+}
+
+.CreateTax:hover {
+  background-color: #04d5b2;
+  color: black;
+  font-weight: 600;
+}
+
+.NewTaxes {
+  padding: 5;
+  cursor: pointer;
+}
+.NewTaxes:hover {
+  background-color: #04d5b2;
+  color: black;
+  font-size: medium;
+}
+
+.CreateNewItembtn {
+  background-color: #025547;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0px 0px 6px grey;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.CreateNewItembtn:hover {
+  background-color: #04d5b2;
+  color: black;
+}
+.ProductListContainer {
+  border: 1px solid rgb(226, 224, 224);
+  padding-top: 5px;
+  background-color: #dee0e0;
+}
+
+.Productlistitem {
+  padding: 5px;
+}
+.Productlistitem:hover {
+  font-size: 18px;
+}
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;

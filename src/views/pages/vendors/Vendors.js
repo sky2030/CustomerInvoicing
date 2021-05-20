@@ -67,71 +67,81 @@ class Vendors extends React.Component{
       </CCol> */}
       <CCol sm="12" lg="12">
           <CButton
+          shape="pill"
           onMouseEnter={() => this.setState({addButtonBgColor: Colors.themeGreen})} 
           onMouseLeave={() => this.setState({addButtonBgColor: Colors.themeDark})} 
-          style={{margin:5, backgroundColor: this.state.addButtonBgColor, color: Colors.lightText}} 
+          style={{margin:10, backgroundColor: this.state.addButtonBgColor, color: Colors.lightText}} 
           onClick={() => this.props.history.push({pathname:'/vendor/add', state:{organizationId: this.state.organizationId }})} 
           className={'float-right'}>Add Vendor</CButton>
 
-          <CButton 
-          onMouseEnter={() => this.setState({importButtonBgColor: Colors.themeGreen})} 
-          onMouseLeave={() => this.setState({importButtonBgColor: Colors.themeDark})} 
-          style={{margin:5, backgroundColor: this.state.importButtonBgColor, color: Colors.lightText}} 
-          className={'float-right'}>Import From</CButton>                   
+          <CDropdown
+            className={'float-right'}> 
+                <CDropdownToggle caret color="info" variant="outline" shape="pill" onMouseEnter={() => this.setState({importButtonBgColor: Colors.themeGreen})} 
+            onMouseLeave={() => this.setState({importButtonBgColor: Colors.themeDark})} 
+            style={{margin:10, backgroundColor: this.state.importButtonBgColor, color: Colors.lightText}} > 
+                Import From...
+                </CDropdownToggle>
+                <CDropdownMenu>
+                    <CDropdownItem 
+                    onClick={() => this.props.history.push({pathname:'/vendors/import'})}
+                    >CSV</CDropdownItem>
+                    
+                    </CDropdownMenu>
+          </CDropdown>                    
       </CCol>
 
       <CCol sm="12" lg="12" style={{marginTop: 30}}> 
           <CCard>
           <h5 style={{fontWeight:"bold", margin: 15}}>Vendors</h5>
             {
-                  !this.state.loader ?
-                  <CCardBody>
-                      <CDataTable
-                              items={this.state.vendorsTableData}
-                              fields={this.state.vendorsField}
-                              hover
-                              striped
-                              bordered
-                              itemsPerPage={7}
-                              pagination
-                              scopedSlots={{
-                                'name': (item) => {
-                                  return(
-                                    <td>{item.firstName} {item.lastName}</td>
-                                  )
-                                },
-                                'directDeposit': (item) => {
-                                  return(
-                                    <td>-</td>
-                                  )
-                                },
-                                'action': (item) => {
-                                  return(
-                                    <td>
-                                      <CDropdown style={{borderRadius:20}} >
-                                          <CDropdownToggle caret color="info" variant="outline" shape="pill"> 
-                                          </CDropdownToggle>
-                                          <CDropdownMenu>
-                                              <CDropdownItem onClick={() => {
-                                                  localStorage.setItem('selectedVendor', JSON.stringify(item))
-                                                  this.props.history.push({pathname:'/vendor/add'})}
-                                              } 
-                                              >Edit</CDropdownItem>
-                                              <CDropdownItem style={{color:'red'}} onClick={() => this.setState({showDeleteModal: true, selectedCustomerId: item.userId})}>Delete</CDropdownItem>
-                                          </CDropdownMenu>
-                                      </CDropdown>
-                                    </td>
-                                  )
-                                }
-                              }}
-                          />
-                  </CCardBody>
-                  :
-                  <div className="row d-flex justify-content-center mt-3 mb-3">
-                      <CSpinner color="info"></CSpinner>
-                  </div>
-              }
-          </CCard>
+                !this.state.loader ?
+                <CCardBody>
+                    <CDataTable
+                            items={this.state.vendorsTableData}
+                            fields={this.state.vendorsField}
+                            hover
+                            striped
+                            bordered
+                            itemsPerPage={7}
+                            pagination
+                            scopedSlots={{
+                              'name': (item) => {
+                                return(
+                                  <td>{item.firstName} {item.lastName}</td>
+                                )
+                              },
+                              'directDeposit': (item) => {
+                                return(
+                                  <td>-</td>
+                                )
+                              },
+                              'action': (item) => {
+                                return(
+                                  <td>
+                                    <CDropdown style={{borderRadius:20}} >
+                                        <CDropdownToggle caret color="info" variant="outline" shape="pill"> 
+                                        </CDropdownToggle>
+                                        <CDropdownMenu>
+                                            <CDropdownItem onClick={() => {
+                                                localStorage.setItem('selectedVendor', JSON.stringify(item))
+                                                this.props.history.push({pathname:'/vendor/add'})}
+                                            } 
+                                            >Edit</CDropdownItem>
+                                            <CDropdownItem style={{color:'red'}} onClick={() => this.setState({showDeleteModal: true, selectedCustomerId: item.userId})}>Delete</CDropdownItem>
+                                        </CDropdownMenu>
+                                    </CDropdown>
+                                  </td>
+                                )
+                              }
+                            }}
+                        />
+                </CCardBody>
+                :
+                <div className="row d-flex justify-content-center mt-3 mb-3">
+                    <CSpinner color="info"></CSpinner>
+                </div>
+            }
+        </CCard>
       </CCol>
 
       <CModal

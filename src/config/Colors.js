@@ -12,7 +12,7 @@ const Colors = {
   textBlue: 'blue',
   grey: '#D3D3D3',
   inputBorder: '#d8dbe0',
-  red: '#A01919',
+  red: '#e55353',
   accentBlue: '#366992'
 }
 
